@@ -1,0 +1,26 @@
+{
+  "name": "chat-ai-api",
+  "version": "1.0.0",
+  "description": "back-end for chat ai app",
+  "license": "MIT",
+  "author": "me",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsc --noEmit && tsx --watch src/server.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "openai": "^5.12.0",
+    "stream-chat": "^9.14.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
