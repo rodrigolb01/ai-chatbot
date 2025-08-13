@@ -77,15 +77,25 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
         };
 
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o-mini",
             messages: [
                 {role: "user", content: message}
             ]
         });
 
-        console.log(response.choices[0]?.message);
+        const openaiMessage: string = response.choices[0]?.message.content ?? "No response from OpenAI";
 
-        res.send("Success");
+        const channelPayload = {
+            name: "ai chat",
+            created_by_id: "ai_bot"
+        };
+
+        const channel = chatClient.channel("messaging", `chat-${userId}`, channelPayload);
+
+        await channel.create();
+        await channel.sendMessage({text: openaiMessage, user: {id: "ai_bot"}});
+
+        res.status(200).json({reply: openaiMessage});
     } catch
     (error) {
         console.error("Error processing chat:", error); 
