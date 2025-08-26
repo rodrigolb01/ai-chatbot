@@ -13,4 +13,4 @@ if(!process.env.DATABASE_URL) {
 const sql = neon(process.env.DATABASE_URL);
 
 //init drizzle
-const db = drizzle(sql);
+export const db = drizzle(sql);

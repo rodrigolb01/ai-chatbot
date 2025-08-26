@@ -2,14 +2,14 @@ import {pgTable, serial, text, timestamp} from 'drizzle-orm/pg-core'
 
 export const chats = pgTable('chats', {
     id: serial('id').primaryKey(),
-    content: text('user_id').notNull(),
-    messages: text('message').notNull(),
+    userId: text('user_id').notNull(),
+    message: text('message').notNull(),
     reply: text('reply').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     });
 
 export const users = pgTable('users', {
-    userId: serial('user_id').primaryKey(),
+    userId: text('user_id').primaryKey(),
     name: text('name').notNull().unique(),
     email: text('email').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

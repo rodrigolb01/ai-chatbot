@@ -4,6 +4,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { StreamChat } from "stream-chat";   
 import OpenAI from "openai";
+import {chats, users } from './db/schema.js'
+import { db } from "./config/database.js"
+import { eq } from "drizzle-orm";
 
 dotenv.config();
 
@@ -53,12 +56,25 @@ app.post('/register-user', async (req: Request, res: Response) : Promise<any> =>
             await chatClient.upsertUser(userPayload);
         };
 
+        //check for existing user in the database
+        const userInDb = await db
+        .select()
+        .from(users)
+        .where(eq(users.userId, userId));
+
+        if(!userInDb.length) {
+            console.log(`User ${userId} does not exist in the database`);
+        }
+
+        //insert user into the database
+        await db.insert(users).values({ userId, name, email });
+
         res.status(200).json({userId, name, email });
     } catch (error) {
         console.error("Error registering user:", error);
         return res.status(500).json({error: "Internal server error"});
     };
-})
+});
 
 //send message to OpenAI and get response
 app.post('/chat', async (req: Request, res: Response): Promise<any> => {
@@ -69,12 +85,22 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
     };   
     
     try{
-        //check if user exists
+        //check if user exists in Stream Chat
         const userResponse = await chatClient.queryUsers({id: userId});
 
         if (!userResponse.users.length) {
             return res.status(404).json({error: "User not found, please register first"});
         };
+
+        //check if user exists in the database
+        const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.userId, userId));
+
+        if(!existingUser.length) {
+            return res.status(404).json({error: "User not found in database, please register first"});
+        }
 
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
@@ -84,6 +110,13 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
         });
 
         const openaiMessage: string = response.choices[0]?.message.content ?? "No response from OpenAI";
+
+        // insert chat to database
+       await db.insert(chats).values({
+            userId, 
+            message,
+            reply: openaiMessage
+        });
 
         const channelPayload = {
             name: "ai chat",
@@ -101,6 +134,27 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
         console.error("Error processing chat:", error); 
         return res.status(500).json({error: "Internal server error"});
     };
+});
+
+//get a chat history for a user
+app.get('/get-messages', async (req: Request, res: Response): Promise<any> => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({error: "User ID is required"});
+    };
+
+    try {
+        const chatHistory = await db
+        .select()
+        .from(chats)
+        .where(eq(chats.userId, userId));
+
+        return res.status(200).json({chatHistory});
+    } catch (error) {
+        console.error("Error fetching chat history:", error);
+        return res.status(500).json({error: "Internal server error"});
+    }
 });
 
 const PORT = process.env.PORT || 5000;

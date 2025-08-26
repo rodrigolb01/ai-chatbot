@@ -7,7 +7,7 @@ CREATE TABLE "chats" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"user_id" serial PRIMARY KEY NOT NULL,
+	"user_id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
