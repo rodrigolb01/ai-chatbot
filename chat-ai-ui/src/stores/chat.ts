@@ -3,16 +3,37 @@ import { ref } from 'vue'
 import axios from 'axios';
 import { useUserStore } from './user';
 
-interface chatMessage {
+
+interface ChatMessage {
     user: string,
     reply: string
 };
 
-interface formattedMessage {
+interface FormattedMessage {
     role: 'user' | 'ai',
     content: string
 }
 
 export const useChatStore = defineStore('chat', () => {
-    
+    const messages = ref<{role: string; content: string;}[]>([]);
+    const isLoading = ref(false);
+    const userStore = useUserStore();
+
+    const loadChatHistory = async () => {
+        if(!userStore.userId) return;
+        try {
+            const { data } = await axios.post(`${import .meta.env.VITE_API_URL}/get-messages`,{
+                userId: userStore.userId
+            });
+
+            messages.value = data.flatmap((msg: ChatMessage): FormattedMessage[] => [
+                { role: 'user', content: msg.user },
+                { role: 'ai', content: msg.reply }
+            ]).filter((msg: FormattedMessage) => msg.content);
+
+        } catch (error) {
+            console.error('Failed to load chat history:', error);
+        }
+    };
+    return { messages, isLoading, loadChatHistory }
 });
