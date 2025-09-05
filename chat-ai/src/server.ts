@@ -66,8 +66,12 @@ app.post('/register-user', async (req: Request, res: Response) : Promise<any> =>
             console.log(`User ${userId} does not exist in the database`);
         }
 
-        //insert user into the database
+        if (!userInDb.length) {
+        console.log(
+          `User ${userId} does not exist in the database. Adding them...`
+        );
         await db.insert(users).values({ userId, name, email });
+      }
 
         res.status(200).json({userId, name, email });
     } catch (error) {
@@ -137,7 +141,7 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
 });
 
 //get a chat history for a user
-app.get('/get-messages', async (req: Request, res: Response): Promise<any> => {
+app.post('/get-messages', async (req: Request, res: Response): Promise<any> => {
     const { userId } = req.body;
 
     if (!userId) {
@@ -150,7 +154,7 @@ app.get('/get-messages', async (req: Request, res: Response): Promise<any> => {
         .from(chats)
         .where(eq(chats.userId, userId));
 
-        return res.status(200).json({chatHistory});
+        return res.status(200).json({messages: chatHistory});
     } catch (error) {
         console.error("Error fetching chat history:", error);
         return res.status(500).json({error: "Internal server error"});

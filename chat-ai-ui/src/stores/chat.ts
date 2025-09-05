@@ -5,7 +5,7 @@ import { useUserStore } from './user';
 
 
 interface ChatMessage {
-    user: string,
+    message: string,
     reply: string
 };
 
@@ -15,19 +15,20 @@ interface FormattedMessage {
 }
 
 export const useChatStore = defineStore('chat', () => {
-    const messages = ref<{role: string; content: string;}[]>([]);
+    const messages = ref<{role: string; content: string }[]>([]);
     const isLoading = ref(false);
     const userStore = useUserStore();
 
+    // Load previous chat messages
     const loadChatHistory = async () => {
         if(!userStore.userId) return;
         try {
-            const { data } = await axios.post(`${import .meta.env.VITE_API_URL}/get-messages`,{
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/get-messages`,{
                 userId: userStore.userId
             });
 
-            messages.value = data.flatmap((msg: ChatMessage): FormattedMessage[] => [
-                { role: 'user', content: msg.user },
+            messages.value = data.messages.flatMap((msg: ChatMessage): FormattedMessage[] => [
+                { role: 'user', content: msg.message },
                 { role: 'ai', content: msg.reply }
             ]).filter((msg: FormattedMessage) => msg.content);
 
