@@ -36,5 +36,26 @@ export const useChatStore = defineStore('chat', () => {
             console.error('Failed to load chat history:', error);
         }
     };
-    return { messages, isLoading, loadChatHistory }
+
+    // Send message to ai
+    const sendMessage = async(message: string) => {
+        if(!message.trim() || !userStore.userId) return;
+        messages.value.push({ role: 'user', content: message });
+        isLoading.value = true;
+
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/chat`, {
+                message,
+                userId: userStore.userId
+            }); 
+
+
+            messages.value.push({ role: 'ai', content: data.reply });
+            isLoading.value = false;
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            messages.value.push({ role: 'ai', content: 'Sorry, something went wrong. Please try again later.' });
+        };
+    };
+    return { messages, isLoading, loadChatHistory, sendMessage };
 });
