@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import {chats, users } from './db/schema.js'
 import { db } from "./config/database.js"
 import { eq } from "drizzle-orm";
+import { ChatCompletionMessageParam } from "openai/resources";
 
 dotenv.config();
 
@@ -106,16 +107,32 @@ app.post('/chat', async (req: Request, res: Response): Promise<any> => {
             return res.status(404).json({error: "User not found in database, please register first"});
         }
 
+        //fetch user past messages for context
+        const chatHistory = await db
+        .select()
+        .from(chats)
+        .where(eq(chats.userId, userId))
+        .orderBy(chats.createdAt)
+        .limit(10);
+
+        //format chat history for OpenAI
+        const conversation: ChatCompletionMessageParam[] = chatHistory.flatMap(chat => ([
+            {role: "user", content: chat.message},
+            {role: "assistant", content: chat.reply}
+        ]));
+
+        //add latest user message to the conversation
+        conversation.push({role: "user", content: message});
+
+        //send message to OpenAI
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [
-                {role: "user", content: message}
-            ]
+            messages: conversation as ChatCompletionMessageParam[]
         });
 
         const openaiMessage: string = response.choices[0]?.message.content ?? "No response from OpenAI";
 
-        // insert chat to database
+        //insert chat to database
        await db.insert(chats).values({
             userId, 
             message,
